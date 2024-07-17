@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="mypage">
+	
+	<!-- 나의 동호회 리스트 가져오기 -->
+    <select id="boardList"  parameterType="map" resultType="mypageVO">
+		select B.* from (
+		select rownum as rnum, A.* from (
+		select club_name, athl_name as code,
+		club_farea, join_date, club_age, club_totalMEM, club_memo, club_ftzone, join.club_no,
+        (SELECT COUNT(*) FROM join WHERE join.club_no = Clubs.CLUB_NO AND Join.JDELETE_YN = 'N') AS CLUB_CURRMEM
+        from join, clubs, athletics
+		where join.club_no = clubs.club_no
+		and athl_id = substr(join.club_no,1,1)
+		and join.mem_no = #{memNo}
+		and join.jdelete_yn='N'
+		)A
+		)B
+		where rnum between #{start} and #{end}
+		order by rnum desc
+    </select>
+    
+    <!-- 나의 동호회 게시물 갯수 조회 -->
+    <select id="countList" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+    	FROM clubs, athletics, join
+    	WHERE join.club_no = clubs.club_no
+      	AND athl_id = substr(join.club_no,1,1)
+      	AND join.mem_no = #{memNo}
+      	and jdelete_yn = 'N'
+    </select>
+    
+    <!-- 사용자 ID와 현재 비밀번호가 일치하는지 확인  -->
+    <select id="getStoredPassword" parameterType="string" resultType="string">
+    	SELECT mem_pw FROM member WHERE mem_id = #{memId}
+	</select>
+</mapper>

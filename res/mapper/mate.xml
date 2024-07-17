@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="mate">
+
+    <!-- 동호회 리스트 조회 -->
+    <select id="getAllMate" parameterType="map" resultType="MateVO">
+        SELECT B.* FROM (
+            SELECT ROWNUM AS RNUM, A.* FROM (
+                SELECT * FROM mate
+                <where>
+                    <if test="athlName != null and athlName != ''">
+                        AND athl_name = #{athlName}
+                    </if>
+                    <if test="clubEndyn != null and clubEndyn != ''">
+                        AND club_endyn = #{clubEndyn}
+                    </if>
+                    <if test="mtName != null and mtName.trim() != ''">
+                        AND club_name LIKE '%' || #{mtName} || '%'
+                    </if>
+                </where>
+            ) A
+        ) B
+        WHERE RNUM BETWEEN #{start} AND #{end}
+        ORDER BY RNUM DESC
+    </select>
+
+    <!-- 동호회 상세 조회 -->
+    <select id="getMateDetail" parameterType="string" resultType="MateVO">
+        SELECT * FROM mate WHERE club_no = #{clubNo}
+    </select>
+    
+    <!-- 동호회 회장 정보 -->
+    <select id="getLeaderInfo" resultType="memberVO" parameterType="int">
+    	select * from member where mem_no = #{no}
+    </select>
+
+    <!-- 동호회 번호 생성 및 동호회 정보 삽입 -->
+    <insert id="insertMate" parameterType="MateVO">
+        <!-- 동호회 번호 생성 -->
+        <selectKey keyProperty="clubNo" resultType="String" order="BEFORE">
+            SELECT #{athlId}||lpad((max_club_no),3,0)
+			FROM (
+			    SELECT max(substr(club_no,2))+1 AS max_club_no 
+			    FROM clubs 
+			    WHERE substr(club_no,1,1)=#{athlId}
+			)
+        </selectKey>
+
+        <!-- clubs 테이블에 동호회 정보 삽입 -->
+        INSERT INTO clubs (
+            CLUB_NO, CLUB_NAME, CLUB_FAREA, CLUB_AGE, CLUB_FTZONE,
+            CLUB_MEMO, CLUB_TOTALMEM, MEM_NO
+        ) VALUES (
+            #{clubNo}, #{clubName}, #{clubFarea}, #{clubAge}, #{clubFtzone},
+            #{clubMemo}, #{clubTotalmem}, #{memNo}
+        )
+    </insert>
+
+    <!-- join 테이블에 리더 정보 삽입 -->
+    <insert id="insertJoinLeader" parameterType="MateVO">
+    
+	    <selectKey keyProperty="clubNo" resultType="String" order="AFTER">
+	        SELECT club_no
+			FROM clubs
+			WHERE mem_no = #{memNo}
+			AND club_name = #{clubName}
+	    </selectKey>
+    
+        INSERT INTO join (
+            JOIN_NO, HEAD_YN, MEM_NO, CLUB_NO, JOIN_DATE
+        ) VALUES (
+            seq_join_no.NEXTVAL, 'Y', #{memNo}, #{clubNo}, SYSDATE
+        )
+    </insert>
+
+    <!-- 동호회 개수 조회 -->
+    <select id="getMateCount" parameterType="map" resultType="int">
+        SELECT COUNT(*) FROM MATE
+        <where>
+            <if test="athlName != null and athlName != ''">
+                AND athl_name = #{athlName}
+            </if>
+            <if test="clubEndyn != null and clubEndyn != ''">
+                AND club_endyn = #{clubEndyn}
+            </if>
+            <if test="mtName != null and mtName.trim() != ''">
+                AND club_name LIKE '%' || #{mtName} || '%'
+            </if>
+        </where>
+    </select>
+    
+    <!-- 동호회 가입하기 -->
+    <insert id="insertClubMember" parameterType="map">
+    	
+	    INSERT INTO join (join_no, mem_no, club_no)
+	    VALUES (seq_join_no.nextval, #{memNo}, #{clubNo})
+	</insert>
+	
+	<!-- 동호회 가입 여부를 확인 -->
+	<select id="isMemberOfClub" parameterType="map" resultType="int">
+	    SELECT COUNT(*) FROM join 
+	    WHERE mem_no = #{memNo} AND club_no = #{clubNo}
+	    and jdelete_yn = 'N'
+	</select>
+	
+    <!-- 찜하기 추가 -->
+    <insert id="insertLike" parameterType="map">
+        INSERT INTO CLUB_LIKE (LIKE_NO, MEM_NO, CLUB_NO)
+        VALUES (seq_like_no.NEXTVAL, #{memNo}, #{clubNo})
+    </insert>
+
+    <!-- 찜하기 삭제 -->
+    <delete id="deleteLike" parameterType="map">
+        DELETE FROM CLUB_LIKE WHERE MEM_NO = #{memNo} AND CLUB_NO = #{clubNo}
+    </delete>
+
+    <!-- 찜하기 상태 확인 -->
+    <select id="checkLike" parameterType="map" resultType="int">
+        SELECT COUNT(*) FROM CLUB_LIKE WHERE MEM_NO = #{memNo} AND CLUB_NO = #{clubNo}
+    </select>
+    
+    <!-- 동호회 정보 수정 -->
+	<update id="updateMate" parameterType="MateVO">
+		update clubs 
+		set
+		    club_farea = #{clubFarea},
+		    club_age = #{clubAge},
+		    club_ftzone = #{clubFtzone},
+		    club_memo = #{clubMemo},
+		    club_totalmem = #{clubTotalmem}
+		where club_no = #{clubNo}
+	</update>
+	
+	<!-- 동호회 탈퇴 -->
+	<update id="deleteMate" parameterType="map">
+		update join 
+		set
+		    jdelete_yn = 'Y'
+		where club_no = #{clubNo}
+		and mem_no= #{memNo}
+	</update>     
+    
+    <!-- 나의 동호회 찜 리스트 -->
+	<select id="likeList" parameterType="map" resultType="MateVO">
+		select B.* from (
+			select rownum as rnum, A.* from (
+	    		SELECT * FROM club_like WHERE mem_no = #{memNo}
+	    	)A
+	    )B
+	    order by rnum desc
+	</select>
+	
+	<!-- 나의 동호회 찜 게시물 개수 조회 -->
+    <select id="countList" parameterType="map" resultType="int">
+        SELECT COUNT(*) FROM CLUB_LIKE
+    	WHERE MEM_NO = #{memNo}
+    </select>
+</mapper>

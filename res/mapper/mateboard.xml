@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="mateBoard">
+
+<!-- 멤버 구역 -->
+<!-- 동호회 전제 멤버수 가져오기 -->
+<select id="getMemberCount" parameterType="String" resultType="int">
+	select count(*) from matemember
+	where club_no = #{cn}
+	and jdelete_yn = 'N'
+</select>
+
+<!-- 동호회 전체 멤버정보 가져오기 -->
+<select id="getMateMember" parameterType="map" resultType="mateMemVO">
+	select B.* from (
+	    select rownum as rnum, A.* from (
+	        select * from matemember
+	        where club_no = #{clubNo}
+	        and jdelete_yn = 'N'
+	        order by head_yn) A
+	    )B
+	where rnum between #{start} and #{end}
+	order by rnum desc
+</select>
+
+<!-- 공지사항 구역 -->
+<!-- 동호회 공지사항 전체개수 가져오기 -->
+<select id="getNoticeCount" parameterType="map" resultType="int">
+	select count(*) from club_notice
+	where club_no = #{clubNo}
+	and 1=1
+	<if test="search != null and search != ''">
+         AND cnotice_title LIKE '%' || #{search} || '%'
+    </if>
+		    
+</select>
+
+<!-- 동호회 공지사항 조회하기 -->
+<select id="getAllNotice" parameterType="map" resultType="mnoticeVO">
+	select B.* from (
+	    select rownum as rnum, A.* from(
+	        select club_notice.*, club_name from club_notice, clubs
+	        where clubs.club_no = club_notice.club_no
+	        and clubs.club_no = #{clubNo}
+	        <if test="search != null and search != ''">
+                AND cnotice_title LIKE '%' || #{search} || '%'
+           	</if>
+		    <choose>
+				<when test="sort == 'latest'">
+					ORDER BY CNOTICE_DATE 
+				</when>
+				<when test="sort == 'views'">
+					ORDER BY cnotice_count
+				</when>
+				<otherwise>
+					ORDER BY CNOTICE_DATE 
+				</otherwise>
+			</choose>
+	        ) A
+	    )B
+	where rnum between #{start} and #{end}
+	order by rnum desc
+</select>
+
+<!-- 동호회 공지사항 상세조회 -->
+<select id="getDetailNotice" parameterType="int" resultType="mnoticeVO">
+	select club_notice.*, club_name from club_notice,  clubs
+	where clubs.club_no = club_notice.club_no
+	and cnotice_no = #{3}
+</select>
+
+<!-- 동호회 공지사항 수정 -->
+<update id="noticeUpdate" parameterType="mnoticeVO">
+	update club_notice
+	set 
+	    cnotice_title = #{cnoticeTitle},
+	    cnotice_content = #{cnoticeContent}
+	where cnotice_no = #{cnoticeNo}
+</update>
+
+<!-- 동호회 공지사항 삭제 -->
+<delete id="noticeDelete" parameterType="int">
+	delete club_notice
+	where cnotice_no=#{1}
+</delete>
+
+<!-- 동호회 공지사항 등록 -->
+<insert id="noticeInsert" parameterType="mnoticeVO">
+	insert into club_notice
+	(cnotice_no, cnotice_title, cnotice_content, mem_no, club_no)
+	values( CBNOTICE_SEQ.nextval, #{cnoticeTitle}, #{cnoticeContent}, #{memNo}, #{clubNo} )
+</insert>
+
+<!-- 공지사항 조회수 증가 -->
+<update id="increaseCount" parameterType="int">
+	update club_notice
+	set 
+	    cnotice_count = cnotice_count + 1
+	where cnotice_no = #{1}
+</update>
+
+<!-- 자유게시판 구역 -->
+<!-- 동호회 자유게시판 전체개수 가져오기 -->
+<select id="getBoardCount" parameterType="map" resultType="int">
+	select count(*) from club_board
+	where club_no = #{clubNo}
+	<if test="search != null and search != ''">
+         AND cb_title LIKE '%' || #{search} || '%'
+    </if>
+</select>
+
+<!-- 동호회 자유게시판 조회하기 -->
+<select id="getAllBoard" parameterType="map" resultType="mboardVO">
+	select B.* from (
+	    select rownum as rnum, A.* from (
+	        select club_board.*, club_name, mem_nick
+	        from club_board, clubs, member
+	        where clubs.club_no = club_board.club_no
+	        and member.mem_no = club_board.mem_no
+	        and clubs.club_no = #{clubNo}
+	        <if test="search != null and search != ''">
+                AND cb_title LIKE '%' || #{search} || '%'
+           	</if>
+		    <choose>
+				<when test="sort == 'latest'">
+					ORDER BY CB_REGDATE 
+				</when>
+				<when test="sort == 'views'">
+					ORDER BY CB_COUNT
+				</when>
+				<otherwise>
+					ORDER BY CB_REGDATE 
+				</otherwise>
+			</choose>
+	        ) A
+	    )B
+	where rnum between #{start} and #{end}
+	order by rnum desc
+</select>
+
+<!-- 동호회 자유게시판 상세조회 -->
+<select id="getDetailBoard" parameterType="int" resultType="mboardVO">
+	select club_board.*, club_name, mem_nick from club_board,  clubs, member
+	where clubs.club_no = club_board.club_no
+    and club_board.mem_no = member.mem_no
+	and cb_no = #{1}
+</select>
+
+<!-- 첨부파일 상세정보 가져오기 -->
+<select id="getFile" parameterType="int" resultType="mbFileVO">
+	select * from club_board_file
+	where cb_no = #{1}
+</select>
+<!-- 사진 가져오기 -->
+<select id="getFileDetail" parameterType="int" resultType="mbFileVO">
+	select * from club_board_file
+	where cbfile_no = #{1}
+</select>
+<!-- 동호회 자유게시판 수정 -->
+<update id="boardUpdate" parameterType="mboardVO">
+	update club_board
+	set 
+	    cb_title = #{cbTitle},
+	    cb_content = #{cbContent}
+	where cb_no = #{cbNo}
+</update>
+
+<!-- 동호회 자유게시판 삭제 -->
+<delete id="boardDelete" parameterType="int">
+	delete club_board
+	where cb_no=#{1}
+</delete>
+<delete id="boardDeleteFile" parameterType="int">
+	delete CLUB_BOARD_FILE
+	where cb_no=#{1}
+</delete>
+
+<!-- 동호회 자유게시판 등록 -->
+<insert id="boardInsert" parameterType="mboardVO">
+
+	<selectKey keyProperty="cbNo" resultType="int" order="BEFORE">
+		select cb_seq.nextval from dual
+	</selectKey>
+	insert into club_board
+	(cb_no, cb_title, cb_content, mem_no, club_no)
+	values(#{cbNo}, #{cbTitle}, #{cbContent}, #{memNo}, #{clubNo})
+	
+</insert>
+<!-- 파일첨부 등록 -->
+<insert id="insertFile" parameterType="mbFileVO">
+
+	insert into club_board_file
+	(cbfile_no, cbfile_name, cbfile_src, cb_no)
+	values( ( select nvl(max(cbfile_no),0)+1 from club_board_file), 
+	#{cbfileName}, #{cbfileSrc}, (select nvl(max(cb_no),0) from club_board)) 
+	
+</insert>
+
+<!-- 자유게시판 조회수 증가 -->
+<update id="increaseBoardCount" parameterType="int">
+	update club_board
+	set 
+	    cb_count = cb_count + 1
+	where cb_no = #{1}
+</update>
+
+</mapper>

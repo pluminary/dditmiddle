@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+  PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+	<!-- 연결할 DB의 정보를 갖고 있는 properties파일 지정하기 -->
+	<properties resource="config/db.properties" />
+	
+	<settings>
+    	<setting name="mapUnderscoreToCamelCase" value="true"/>
+    	<setting name="jdbcTypeForNull" value="NULL"/>
+    </settings>
+	
+	<!-- 
+		VO객체를 사용할 때는 패키지명까지 포함된 전체 이름을 사용하면 이름이 길어짐
+		이대신 짧은 이름으로 대체해서 사용하고자 할 때 설정
+	형식) <typeAlias type="패키지명까지 포함된 전체 이름" alias="alias명"/>	
+	-->
+	<typeAliases>
+	
+		<typeAlias type="kr.or.ddit.place.vo.PlaceVO" alias="placeVO"/>
+		<typeAlias type="kr.or.ddit.member.vo.MemberVO" alias="memberVO"/>
+		<typeAlias type="kr.or.ddit.member.vo.adminVO" alias="adminVO"/>
+		<typeAlias type="kr.or.ddit.board.vo.FreeBoardVO" alias="freeboardVO"/>
+		<typeAlias type="kr.or.ddit.board.vo.BuyBoardVO" alias="buyboardVO"/>
+		<typeAlias type="kr.or.ddit.member.vo.askVO" alias="askVO"/>
+		<typeAlias type="kr.or.ddit.place.vo.AthlVO" alias="athlVO"/>
+		<typeAlias type="kr.or.ddit.board.vo.NoticeBoardVO" alias="noticeboardVO"/>
+		<typeAlias type="kr.or.ddit.place.vo.MedicalVO" alias="medicVO"/>
+		<typeAlias type="kr.or.ddit.mate.vo.MateMemberVO" alias="mateMemVO"/>
+		<typeAlias type="kr.or.ddit.mate.vo.MateNoticeVO" alias="mnoticeVO"/>
+		<typeAlias type="kr.or.ddit.mate.vo.MateVO" alias="mateVO"/>
+		<typeAlias type="kr.or.ddit.mate.vo.MateBoardVO" alias="mboardVO"/>
+		<typeAlias type="kr.or.ddit.member.vo.MyPageVO" alias="mypageVO"/>
+		<typeAlias type="kr.or.ddit.mate.vo.MBoardFileVO" alias="mbFileVO"/>
+
+	</typeAliases>
+
+	<environments default="dev">
+		<environment id="dev">
+			<transactionManager type="JDBC" />
+			<dataSource type="POOLED">
+				<property name="driver" value="${driver}"/>		
+				<property name="url" value="${url}"/>		
+				<property name="username" value="${username}"/>		
+				<property name="password" value="${password}"/>
+				<property name="poolMaximumActiveConnections" value="2"/><!-- 활성화된 최대 커넥션 수 -->
+				<property name="poolMaximumIdleConnections" value="2"/><!-- 유휴상태에서 최대 커넥션 수 -->		
+			</dataSource>
+		</environment>	
+	</environments> 
+	
+	<mappers>
+		<mapper resource="mapper/place.xml"/>
+		<mapper resource="mapper/member.xml"/>
+		<mapper resource="mapper/freeboard.xml"/>
+		<mapper resource="mapper/buyboard.xml"/>
+		<mapper resource="mapper/askboard.xml"/>
+		<mapper resource="mapper/noticeboard.xml"/>
+		<mapper resource="mapper/mateboard.xml"/>
+		<mapper resource="mapper/mate.xml"/>
+		<mapper resource="mapper/mypage.xml"/>
+	</mappers>
+	
+</configuration>
